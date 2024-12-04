@@ -1,14 +1,12 @@
-import argparse
 import os
 import torch
-from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
-from exp.exp_imputation import Exp_Imputation
-from exp.exp_short_term_forecasting import Exp_Short_Term_Forecast
-from exp.exp_anomaly_detection import Exp_Anomaly_Detection
-from exp.exp_classification import Exp_Classification
-from utils.print_args import print_args
 import random
+import argparse
 import numpy as np
+from utils.print_args import print_args
+from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
+from exp.exp_short_term_forecasting import Exp_Short_Term_Forecast
+
 
 if __name__ == '__main__':
     fix_seed = 2021
@@ -153,12 +151,6 @@ if __name__ == '__main__':
         Exp = Exp_Long_Term_Forecast
     elif args.task_name == 'short_term_forecast':
         Exp = Exp_Short_Term_Forecast
-    elif args.task_name == 'imputation':
-        Exp = Exp_Imputation
-    elif args.task_name == 'anomaly_detection':
-        Exp = Exp_Anomaly_Detection
-    elif args.task_name == 'classification':
-        Exp = Exp_Classification
     else:
         Exp = Exp_Long_Term_Forecast
 
@@ -187,10 +179,10 @@ if __name__ == '__main__':
                 args.distil,
                 args.des, ii)
 
-            print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
+            print(f'>>>>>>>start training : {setting} >>>>>>>>>>>>>>>>>>>>>>>>>>\n')
             exp.train(setting)
 
-            print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+            print(f'>>>>>>>testing : {setting} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n')
             exp.test(setting)
             torch.cuda.empty_cache()
     else:
@@ -217,6 +209,6 @@ if __name__ == '__main__':
             args.des, ii)
 
         exp = Exp(args)  # set experiments
-        print('>>>>>>>testing : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(setting))
+        print('>>>>>>>testing : {setting} <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n')
         exp.test(setting, test=1)
         torch.cuda.empty_cache()

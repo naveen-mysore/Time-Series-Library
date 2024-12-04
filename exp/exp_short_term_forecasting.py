@@ -17,6 +17,30 @@ from torch.utils.tensorboard import SummaryWriter
 warnings.filterwarnings('ignore')
 
 
+def save_results(file_path, model_name, smape_results, mape, mase, owa_results):
+    # Define the file where results will be stored
+    results_file = f"{file_path}/forecast_evaluation_results.csv"
+
+    # Create a DataFrame for the current model
+    results_df = pd.DataFrame({
+        'Model': [model_name],
+        'SMAPE': [smape_results],
+        'MAPE': [mape],
+        'MASE': [mase],
+        'OWA': [owa_results]
+    })
+
+    # Append results to the file, creating it if it doesn't exist
+    if os.path.exists(results_file):
+        # Append without writing the header
+        results_df.to_csv(results_file, mode='a', index=False, header=False)
+    else:
+        # Write the header if the file doesn't exist
+        results_df.to_csv(results_file, mode='w', index=False)
+
+    print(f'Results for {model_name} saved to {results_file}')
+
+
 class Exp_Short_Term_Forecast(Exp_Basic):
     def __init__(self, args):
         super(Exp_Short_Term_Forecast, self).__init__(args)
@@ -78,8 +102,8 @@ class Exp_Short_Term_Forecast(Exp_Basic):
             for i, (batch_x, batch_y, batch_x_mark, batch_y_mark) in enumerate(train_loader):
                 iter_count += 1
                 model_optim.zero_grad()
-                batch_x = batch_x.float().to(self.device)
 
+                batch_x = batch_x.float().to(self.device)
                 batch_y = batch_y.float().to(self.device)
                 batch_y_mark = batch_y_mark.float().to(self.device)
 
@@ -212,7 +236,7 @@ class Exp_Short_Term_Forecast(Exp_Basic):
         print('test shape:', preds.shape)
 
         # result save
-        folder_path = './m4_results/' + self.args.model + '/'
+        folder_path = './results/m4_results/' + self.args.model + '/'
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
 
@@ -223,7 +247,7 @@ class Exp_Short_Term_Forecast(Exp_Basic):
         forecasts_df.to_csv(folder_path + self.args.seasonal_patterns + '_forecast.csv')
 
         print(self.args.model)
-        file_path = './m4_results/' + self.args.model + '/'
+        file_path = folder_path
         if 'Weekly_forecast.csv' in os.listdir(file_path) \
                 and 'Monthly_forecast.csv' in os.listdir(file_path) \
                 and 'Yearly_forecast.csv' in os.listdir(file_path) \
@@ -237,6 +261,7 @@ class Exp_Short_Term_Forecast(Exp_Basic):
             print('mape:', mape)
             print('mase:', mase)
             print('owa:', owa_results)
+            save_results(file_path, "Transformers", smape_results, mape, mase, owa_results)
         else:
             print('After all 6 tasks are finished, you can calculate the averaged index')
         return
