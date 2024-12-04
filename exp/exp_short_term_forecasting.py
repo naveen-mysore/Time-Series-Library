@@ -112,7 +112,7 @@ class Exp_Short_Term_Forecast(Exp_Basic):
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
-            writer.add_scalar('Loss/Train', avg_train_loss, epoch)
+            writer.add_scalar('Loss/Train', train_loss, epoch)
             vali_loss = self.vali(train_loader, vali_loader, criterion)
             writer.add_scalar('Loss/Validation', vali_loss, epoch)
             test_loss = vali_loss
