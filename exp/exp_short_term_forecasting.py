@@ -12,6 +12,7 @@ import time
 import warnings
 import numpy as np
 import pandas
+from torch.utils.tensorboard import SummaryWriter
 
 warnings.filterwarnings('ignore')
 
@@ -51,6 +52,7 @@ class Exp_Short_Term_Forecast(Exp_Basic):
             return smape_loss()
 
     def train(self, setting):
+        writer = SummaryWriter(log_dir=os.path.join(self.args.checkpoints, "Exp_Short_Term_Forecast", 'logs'))
         train_data, train_loader = self._get_data(flag='train')
         vali_data, vali_loader = self._get_data(flag='val')
 
@@ -110,7 +112,9 @@ class Exp_Short_Term_Forecast(Exp_Basic):
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
+            writer.add_scalar('Loss/Train', avg_train_loss, epoch)
             vali_loss = self.vali(train_loader, vali_loader, criterion)
+            writer.add_scalar('Loss/Validation', vali_loss, epoch)
             test_loss = vali_loss
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
@@ -123,6 +127,9 @@ class Exp_Short_Term_Forecast(Exp_Basic):
 
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
+
+        # Close TensorBoard writer
+        writer.close()
 
         return self.model
 
