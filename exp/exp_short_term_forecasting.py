@@ -114,7 +114,10 @@ class Exp_Short_Term_Forecast(Exp_Basic):
             method=dataclasses.asdict(method)
         )
         result = dataclasses.asdict(_result)
-        fb.insert(collection=self.args.experiment_id, doc_id=str(uuid.uuid4()), data=result)
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        doc_id = f"service1_{timestamp}_{uuid.uuid4()}"
+        exp_stamp = datetime.datetime.now().strftime("%Y%m%d")
+        fb.insert(collection=f"{exp_stamp}_{self.args.experiment_id}", doc_id=str(doc_id), data=result)
 
 
     def train(self, setting):
