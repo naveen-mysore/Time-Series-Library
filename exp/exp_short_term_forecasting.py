@@ -1,9 +1,11 @@
 from data_provider.data_factory import data_provider
 from data_provider.m4 import M4Meta
 from exp.exp_basic import Exp_Basic
+import utils
 from utils.tools import EarlyStopping, adjust_learning_rate, visual
 from utils.losses import mape_loss, mase_loss, smape_loss
 from utils.m4_summary import M4Summary
+from utils.firebasedb import *
 import torch
 import torch.nn as nn
 from torch import optim
@@ -13,6 +15,9 @@ import warnings
 import numpy as np
 import pandas
 from torch.utils.tensorboard import SummaryWriter
+import uuid
+import platform
+import time
 
 warnings.filterwarnings('ignore')
 
@@ -22,7 +27,7 @@ def save_results(file_path, model_name, smape_results, mape, mase, owa_results):
     results_file = f"{file_path}/forecast_evaluation_results.csv"
 
     # Create a DataFrame for the current model
-    results_df = pd.DataFrame({
+    results_df = pandas.DataFrame({
         'Model': [model_name],
         'SMAPE': [smape_results],
         'MAPE': [mape],
@@ -41,9 +46,11 @@ def save_results(file_path, model_name, smape_results, mape, mase, owa_results):
     print(f'Results for {model_name} saved to {results_file}')
 
 
+
 class Exp_Short_Term_Forecast(Exp_Basic):
     def __init__(self, args):
         super(Exp_Short_Term_Forecast, self).__init__(args)
+        self.start_time = time.time()
 
     def _build_model(self):
         if self.args.data == 'm4':
@@ -74,6 +81,41 @@ class Exp_Short_Term_Forecast(Exp_Basic):
             return mase_loss()
         elif loss_name == 'SMAPE':
             return smape_loss()
+
+    def _package_and_publish_results(self, metric1=None, metric2=None):
+        fb = Firebase()
+        if metric1 is None:
+            metric1 = Metric1(mse=-0.00, mae=-0.00)
+        if metric2 is None:
+            metric2 = Metric2(mse=-0.00, mae=-0.00)
+        # Create a task with dummy values
+        task = Task(
+            name=self.args.task_name,
+            dataset=self.args.data,
+            execution_time_minutes=int(time.time()-self.start_time/60),
+            metric1=dataclasses.asdict(metric1),
+            metric2=dataclasses.asdict(metric2),
+            seq_len=self.args.seq_len,
+            pred_len=self.args.pred_len
+        )
+
+        # Create a method
+        method = Method(
+            name=f"{self.args.model} - {self.args.model_id}",
+            task=dataclasses.asdict(task)
+        )
+
+        # Create a result
+        _result = Result(
+            name=self.args.experiment_name,
+            machine_name=platform.node(),
+            timestamp=datetime.datetime.now(),
+            experiment_id=self.args.experiment_id,
+            method=dataclasses.asdict(method)
+        )
+        result = dataclasses.asdict(_result)
+        fb.insert(collection=self.args.experiment_id, doc_id=str(uuid.uuid4()), data=result)
+
 
     def train(self, setting):
         writer = SummaryWriter(log_dir=os.path.join(self.args.checkpoints, "Exp_Short_Term_Forecast", 'logs'))
@@ -148,6 +190,7 @@ class Exp_Short_Term_Forecast(Exp_Basic):
                 break
 
             adjust_learning_rate(model_optim, epoch + 1, self.args)
+            break
 
         best_model_path = path + '/' + 'checkpoint.pth'
         self.model.load_state_dict(torch.load(best_model_path))
@@ -219,6 +262,7 @@ class Exp_Short_Term_Forecast(Exp_Basic):
 
                 if id_list[i] % 1000 == 0:
                     print(id_list[i])
+                break
 
             f_dim = -1 if self.args.features == 'MS' else 0
             outputs = outputs[:, -self.args.pred_len:, f_dim:]
@@ -262,6 +306,9 @@ class Exp_Short_Term_Forecast(Exp_Basic):
             print('mase:', mase)
             print('owa:', owa_results)
             save_results(file_path, "Transformers", smape_results, mape, mase, owa_results)
+            metric2 = Metric2(smape=smape_results, mase=mase, oaw=owa_results)
+            self._package_and_publish_results(metric1=None, metric2=metric2)
         else:
             print('After all 6 tasks are finished, you can calculate the averaged index')
+        
         return

@@ -15,3 +15,4 @@ tensorboard
 tensorboard-data-server
 tensorflow
 tensorflow-io-gcs-filesystem
+firebase-admin
