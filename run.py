@@ -128,6 +128,8 @@ if __name__ == '__main__':
     parser.add_argument('--discdtw', default=False, action="store_true", help="Discrimitive DTW warp preset augmentation")
     parser.add_argument('--discsdtw', default=False, action="store_true", help="Discrimitive shapeDTW warp preset augmentation")
     parser.add_argument('--extra_tag', type=str, default="", help="Anything extra")
+    parser.add_argument('--experiment_id', type=str, default="00", help="Id of the experiment")
+    parser.add_argument('--experiment_name', type=str, default="experiment", help="Name of the experiment")
 
     # TimeXer
     parser.add_argument('--patch_len', type=int, default=16, help='patch length')
